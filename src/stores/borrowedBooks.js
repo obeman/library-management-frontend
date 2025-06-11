@@ -33,8 +33,8 @@ export const useBorrowedBooksStore = defineStore('borrowedBooks', {
         const response = await axios.post('/api/borrowed-books', {
           bookId: borrowedBook.bookId,
           memberId: borrowedBook.memberId,
-          borrowedDate: borrowedBook.borrowedDate,
-          dueDate: borrowedBook.dueDate
+          borrowDate: borrowedBook.borrowDate,
+          returnDate: borrowedBook.returnDate
         })
         this.borrowedBooks.push(response.data)
         return response.data

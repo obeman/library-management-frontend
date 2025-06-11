@@ -7,7 +7,7 @@
         <v-text-field
           v-model="search"
           append-icon="mdi-magnify"
-          label="Search"
+          label="Search by Title"
           single-line
           hide-details
           class="mr-4"
@@ -20,8 +20,8 @@
 
       <v-data-table
         :headers="headers"
-        :items="booksStore.books"
-        :search="search"
+        :items="filteredBooks"
+        :search="''"
         :loading="booksStore.loading"
         class="elevation-1"
       >
@@ -63,10 +63,19 @@
               </v-col>
               <v-col cols="12">
                 <v-text-field
-                  v-model="editedItem.isbn"
-                  label="ISBN"
-                  :error-messages="errors.isbn"
-                  @input="errors.isbn = ''"
+                  v-model="editedItem.publishingYear"
+                  label="Publishing Year"
+                  type="number"
+                  :error-messages="errors.publishingYear"
+                  @input="errors.publishingYear = ''"
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="editedItem.category"
+                  label="Category"
+                  :error-messages="errors.category"
+                  @input="errors.category = ''"
                 ></v-text-field>
               </v-col>
               <v-col cols="12">
@@ -125,7 +134,8 @@ const deleteDialog = ref(false)
 
 const headers = [
   { title: 'Title', key: 'title' },
-  { title: 'ISBN', key: 'isbn' },
+  { title: 'Publishing Year', key: 'publishingYear' },
+  { title: 'Category', key: 'category' },
   { title: 'Author', key: 'author.name' },
   { title: 'Actions', key: 'actions', sortable: false }
 ]
@@ -133,25 +143,35 @@ const headers = [
 const editedIndex = ref(-1)
 const editedItem = ref({
   title: '',
-  isbn: '',
+  publishingYear: '',
+  category: '',
   authorId: null
 })
 
 const errors = ref({
   title: '',
-  isbn: '',
+  publishingYear: '',
+  category: '',
   authorId: ''
 })
 
 const defaultItem = {
   title: '',
-  isbn: '',
+  publishingYear: '',
+  category: '',
   authorId: null
 }
 
 const formTitle = computed(() => {
   return editedIndex.value === -1 ? 'New Book' : 'Edit Book'
 })
+
+const filteredBooks = computed(() => {
+  if (!search.value) return booksStore.books;
+  return booksStore.books.filter(book =>
+    book.title && book.title.toLowerCase().includes(search.value.toLowerCase())
+  );
+});
 
 async function editItem(item) {
   editedIndex.value = booksStore.books.indexOf(item)
@@ -180,7 +200,8 @@ function closeDialog() {
   editedIndex.value = -1
   errors.value = {
     title: '',
-    isbn: '',
+    publishingYear: '',
+    category: '',
     authorId: ''
   }
 }

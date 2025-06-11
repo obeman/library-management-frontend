@@ -18,11 +18,6 @@
                 label="Name"
                 required
               ></v-text-field>
-              <v-text-field
-                v-model="newAuthor.biography"
-                label="Biography"
-                required
-              ></v-text-field>
               <v-btn color="primary" type="submit">Create Author</v-btn>
             </v-form>
           </v-card-text>
@@ -32,7 +27,19 @@
       <!-- Author List -->
       <v-col cols="12" md="6">
         <v-card>
-          <v-card-title>Authors List</v-card-title>
+          <v-card-title>
+            Authors List
+            <v-spacer></v-spacer>
+            <v-text-field
+              v-model="search"
+              append-icon="mdi-magnify"
+              label="Search by Name"
+              single-line
+              hide-details
+              class="mr-4"
+              style="max-width: 300px"
+            ></v-text-field>
+          </v-card-title>
           <v-card-text>
             <v-table>
               <thead>
@@ -43,7 +50,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="author in authors" :key="author.id">
+                <tr v-for="author in filteredAuthors" :key="author.id">
                   <td>{{ author.name }}</td>
                   <td>{{ author.biography }}</td>
                   <td>
@@ -81,11 +88,6 @@
               label="Name"
               required
             ></v-text-field>
-            <v-text-field
-              v-model="editingAuthor.biography"
-              label="Biography"
-              required
-            ></v-text-field>
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -99,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 
 const authors = ref([])
@@ -113,6 +115,7 @@ const editingAuthor = ref({
   name: '',
   biography: ''
 })
+const search = ref('')
 
 const API_URL = '/api/authors'
 
@@ -130,7 +133,7 @@ const fetchAuthors = async () => {
 const createAuthor = async () => {
   try {
     await axios.post(API_URL, newAuthor.value)
-    newAuthor.value = { name: '', biography: '' }
+    newAuthor.value = { name: '' }
     await fetchAuthors()
   } catch (error) {
     console.error('Error creating author:', error)
@@ -165,6 +168,13 @@ const deleteAuthor = async (id) => {
     }
   }
 }
+
+const filteredAuthors = computed(() => {
+  if (!search.value) return authors.value;
+  return authors.value.filter(author =>
+    author.name && author.name.toLowerCase().includes(search.value.toLowerCase())
+  );
+});
 
 onMounted(() => {
   fetchAuthors()

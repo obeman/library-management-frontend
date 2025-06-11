@@ -2,177 +2,239 @@
   <v-container>
     <v-row>
       <v-col cols="12">
-        <h1 class="text-h4 mb-4">Books Management</h1>
-      </v-col>
-    </v-row>
-
-    <!-- Create Book Form -->
-    <v-row>
-      <v-col cols="12" md="6">
-        <v-card class="mb-4">
-          <v-card-title>Create New Book</v-card-title>
-          <v-card-text>
-            <v-form @submit.prevent="createBook">
-              <v-text-field
-                v-model="newBook.title"
-                label="Title"
-                required
-              ></v-text-field>
-              <v-text-field
-                v-model.number="newBook.authorId"
-                label="Author ID"
-                type="number"
-                required
-              ></v-text-field>
-              <v-text-field
-                v-model.number="newBook.publishedYear"
-                label="Published Year"
-                type="number"
-                required
-              ></v-text-field>
-              <v-btn color="primary" type="submit">Create Book</v-btn>
-            </v-form>
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <!-- Book List -->
-      <v-col cols="12" md="6">
+        <h1 class="text-h4 mb-4">Books</h1>
         <v-card>
-          <v-card-title>Books List</v-card-title>
-          <v-card-text>
-            <v-list>
-              <v-list-item v-for="book in books" :key="book.id">
-                <v-list-item-title>{{ book.title }}</v-list-item-title>
-                <v-list-item-subtitle>
-                  Author ID: {{ book.authorId }} | Year: {{ book.publishedYear }}
-                </v-list-item-subtitle>
-                <template v-slot:append>
-                  <v-btn
-                    icon="mdi-pencil"
-                    variant="text"
-                    @click="editBook(book)"
-                  ></v-btn>
-                  <v-btn
-                    icon="mdi-delete"
-                    variant="text"
-                    color="error"
-                    @click="deleteBook(book.id)"
-                  ></v-btn>
-                </template>
-              </v-list-item>
-            </v-list>
-          </v-card-text>
+          <v-card-title>
+            <v-text-field
+              v-model="search"
+              append-icon="mdi-magnify"
+              label="Search"
+              single-line
+              hide-details
+              class="mb-2"
+            ></v-text-field>
+            <v-spacer></v-spacer>
+            <v-btn color="primary" @click="openAddDialog">
+              <v-icon left>mdi-plus</v-icon>
+              Add Book
+            </v-btn>
+          </v-card-title>
+
+          <v-data-table
+            :headers="headers"
+            :items="books"
+            :search="search"
+            :loading="loading"
+            class="elevation-1"
+          >
+            <template v-slot:item.actions="{ item }">
+              <v-icon
+                small
+                class="mr-2"
+                @click="editBook(item.raw)"
+              >
+                mdi-pencil
+              </v-icon>
+              <v-icon
+                small
+                @click="deleteBook(item.raw)"
+              >
+                mdi-delete
+              </v-icon>
+            </template>
+          </v-data-table>
         </v-card>
       </v-col>
     </v-row>
 
-    <!-- Edit Book Dialog -->
-    <v-dialog v-model="editDialog" max-width="500px">
+    <!-- Add/Edit Dialog -->
+    <v-dialog v-model="dialog" max-width="500px">
       <v-card>
-        <v-card-title>Edit Book</v-card-title>
+        <v-card-title>
+          <span class="text-h5">{{ formTitle }}</span>
+        </v-card-title>
+
         <v-card-text>
-          <v-form @submit.prevent="updateBook">
-            <v-text-field
-              v-model="editingBook.title"
-              label="Title"
-              required
-            ></v-text-field>
-            <v-text-field
-              v-model.number="editingBook.authorId"
-              label="Author ID"
-              type="number"
-              required
-            ></v-text-field>
-            <v-text-field
-              v-model.number="editingBook.publishedYear"
-              label="Published Year"
-              type="number"
-              required
-            ></v-text-field>
-          </v-form>
+          <v-container>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="editedItem.title"
+                  label="Title"
+                  required
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="editedItem.category"
+                  label="Category"
+                  required
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="editedItem.publishingYear"
+                  label="Publishing Year"
+                  type="number"
+                  required
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-select
+                  v-model="editedItem.authorId"
+                  :items="authors"
+                  item-title="name"
+                  item-value="id"
+                  label="Author"
+                  required
+                ></v-select>
+              </v-col>
+            </v-row>
+          </v-container>
         </v-card-text>
+
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="error" @click="editDialog = false">Cancel</v-btn>
-          <v-btn color="primary" @click="updateBook">Save</v-btn>
+          <v-btn color="error" variant="text" @click="closeDialog">
+            Cancel
+          </v-btn>
+          <v-btn color="primary" variant="text" @click="saveBook">
+            Save
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
   </v-container>
 </template>
 
-<script setup>
+<script>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
-const books = ref([])
-const newBook = ref({
-  title: '',
-  authorId: null,
-  publishedYear: null
-})
-const editDialog = ref(false)
-const editingBook = ref({
-  id: null,
-  title: '',
-  authorId: null,
-  publishedYear: null
-})
+export default {
+  name: 'BooksView',
+  setup() {
+    const books = ref([])
+    const authors = ref([])
+    const loading = ref(false)
+    const search = ref('')
+    const dialog = ref(false)
+    const editedIndex = ref(-1)
+    const editedItem = ref({
+      title: '',
+      category: '',
+      publishingYear: new Date().getFullYear(),
+      authorId: null
+    })
+    const defaultItem = {
+      title: '',
+      category: '',
+      publishingYear: new Date().getFullYear(),
+      authorId: null
+    }
 
-const API_URL = '/api/books'
+    const headers = [
+      { title: 'Title', key: 'title' },
+      { title: 'Category', key: 'category' },
+      { title: 'Publishing Year', key: 'publishingYear' },
+      { title: 'Author', key: 'authorName' },
+      { title: 'Actions', key: 'actions', sortable: false }
+    ]
 
-// Fetch all books
-const fetchBooks = async () => {
-  try {
-    const response = await axios.get(API_URL)
-    books.value = response.data
-  } catch (error) {
-    console.error('Error fetching books:', error)
-  }
-}
+    const fetchBooks = async () => {
+      loading.value = true
+      try {
+        console.log('Fetching books...')
+        const response = await axios.get('http://localhost:8080/api/books')
+        console.log('Books response:', response.data)
+        books.value = response.data
+      } catch (error) {
+        console.error('Error fetching books:', error)
+      } finally {
+        loading.value = false
+      }
+    }
 
-// Create a new book
-const createBook = async () => {
-  try {
-    await axios.post(API_URL, newBook.value)
-    newBook.value = { title: '', authorId: null, publishedYear: null }
-    await fetchBooks()
-  } catch (error) {
-    console.error('Error creating book:', error)
-  }
-}
+    const fetchAuthors = async () => {
+      try {
+        console.log('Fetching authors...')
+        const response = await axios.get('http://localhost:8080/api/authors')
+        console.log('Authors response:', response.data)
+        authors.value = response.data
+      } catch (error) {
+        console.error('Error fetching authors:', error)
+      }
+    }
 
-// Edit book
-const editBook = (book) => {
-  editingBook.value = { ...book }
-  editDialog.value = true
-}
+    const formTitle = computed(() => {
+      return editedIndex.value === -1 ? 'New Book' : 'Edit Book'
+    })
 
-// Update book
-const updateBook = async () => {
-  try {
-    await axios.put(`${API_URL}/${editingBook.value.id}`, editingBook.value)
-    editDialog.value = false
-    await fetchBooks()
-  } catch (error) {
-    console.error('Error updating book:', error)
-  }
-}
+    const openAddDialog = () => {
+      editedIndex.value = -1
+      editedItem.value = Object.assign({}, defaultItem)
+      dialog.value = true
+    }
 
-// Delete book
-const deleteBook = async (id) => {
-  if (confirm('Are you sure you want to delete this book?')) {
-    try {
-      await axios.delete(`${API_URL}/${id}`)
-      await fetchBooks()
-    } catch (error) {
-      console.error('Error deleting book:', error)
+    const editBook = (item) => {
+      editedIndex.value = books.value.indexOf(item)
+      editedItem.value = Object.assign({}, item)
+      dialog.value = true
+    }
+
+    const deleteBook = async (item) => {
+      if (confirm('Are you sure you want to delete this book?')) {
+        try {
+          await axios.delete(`http://localhost:8080/api/books/${item.id}`)
+          await fetchBooks()
+        } catch (error) {
+          console.error('Error deleting book:', error)
+        }
+      }
+    }
+
+    const closeDialog = () => {
+      dialog.value = false
+      editedItem.value = Object.assign({}, defaultItem)
+      editedIndex.value = -1
+    }
+
+    const saveBook = async () => {
+      try {
+        if (editedIndex.value > -1) {
+          await axios.put(`http://localhost:8080/api/books/${editedItem.value.id}`, editedItem.value)
+        } else {
+          await axios.post('http://localhost:8080/api/books', editedItem.value)
+        }
+        await fetchBooks()
+        closeDialog()
+      } catch (error) {
+        console.error('Error saving book:', error)
+      }
+    }
+
+    onMounted(() => {
+      console.log('Component mounted')
+      fetchBooks()
+      fetchAuthors()
+    })
+
+    return {
+      books,
+      authors,
+      loading,
+      search,
+      dialog,
+      editedIndex,
+      editedItem,
+      headers,
+      formTitle,
+      openAddDialog,
+      editBook,
+      deleteBook,
+      closeDialog,
+      saveBook
     }
   }
 }
-
-onMounted(() => {
-  fetchBooks()
-})
 </script> 

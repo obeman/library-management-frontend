@@ -46,22 +46,45 @@
       <!-- Borrowed Books List -->
       <v-col cols="12" md="6">
         <v-card>
-          <v-card-title>Borrowed Books List</v-card-title>
+          <v-card-title class="d-flex align-center">
+            List
+            <v-spacer></v-spacer>
+            <v-text-field
+              v-model="search"
+              append-icon="mdi-magnify"
+              label="Search by Member Name or Book Title"
+              single-line
+              hide-details
+              class="mr-4"
+              style="max-width: 300px"
+            ></v-text-field>
+            <v-text-field
+              v-model="borrowDateFilter"
+              label="Filter by Borrow Date"
+              type="date"
+              class="mr-4"
+              style="max-width: 200px"
+            ></v-text-field>
+          </v-card-title>
           <v-card-text>
             <v-table>
               <thead>
                 <tr>
                   <th>Book ID</th>
+                  <th>Book Title</th>
                   <th>Member ID</th>
+                  <th>Member Name</th>
                   <th>Borrow Date</th>
                   <th>Return Date</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="borrowedBook in borrowedBooks" :key="borrowedBook.id">
+                <tr v-for="borrowedBook in filteredBorrowedBooks" :key="borrowedBook.id">
                   <td>{{ borrowedBook.bookId }}</td>
+                  <td>{{ borrowedBook.bookTitle }}</td>
                   <td>{{ borrowedBook.memberId }}</td>
+                  <td>{{ borrowedBook.memberName }}</td>
                   <td>{{ borrowedBook.borrowDate }}</td>
                   <td>{{ borrowedBook.returnDate }}</td>
                   <td>
@@ -131,8 +154,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
 const borrowedBooks = ref([])
 const newBorrowedBook = ref({
@@ -149,6 +173,16 @@ const editingBorrowedBook = ref({
   borrowDate: '',
   returnDate: ''
 })
+const search = ref('')
+const borrowDateFilter = ref('')
+const router = useRouter()
+const pages = [
+  { label: 'Books', route: '/books' },
+  { label: 'Authors', route: '/authors' },
+  { label: 'Members', route: '/members' },
+  { label: 'Borrowed Books', route: '/borrowed-books' }
+]
+const selectedPage = ref('/borrowed-books')
 
 const API_URL = '/api/borrowed-books'
 
@@ -204,6 +238,28 @@ const deleteBorrowedBook = async (id) => {
     } catch (error) {
       console.error('Error deleting borrowed book record:', error)
     }
+  }
+}
+
+const filteredBorrowedBooks = computed(() => {
+  let filtered = borrowedBooks.value;
+  if (search.value) {
+    const searchVal = search.value.toLowerCase();
+    filtered = filtered.filter(borrowedBook => {
+      const memberName = borrowedBook.memberName ? borrowedBook.memberName.toLowerCase() : '';
+      const bookTitle = borrowedBook.bookTitle ? borrowedBook.bookTitle.toLowerCase() : '';
+      return memberName.includes(searchVal) || bookTitle.includes(searchVal);
+    });
+  }
+  if (borrowDateFilter.value) {
+    filtered = filtered.filter(borrowedBook => borrowedBook.borrowDate === borrowDateFilter.value);
+  }
+  return filtered;
+});
+
+function navigateToPage(route) {
+  if (route && route !== router.currentRoute.value.path) {
+    router.push(route)
   }
 }
 

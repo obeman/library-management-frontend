@@ -1,5 +1,20 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const pages = [
+  { label: 'Books', route: '/books' },
+  { label: 'Authors', route: '/authors' },
+  { label: 'Members', route: '/members' },
+  { label: 'Borrowed Books', route: '/borrowed-books' }
+]
+const selectedPage = ref('')
+function navigateToPage(route) {
+  if (route && route !== router.currentRoute.value.path) {
+    router.push(route)
+  }
+}
 </script>
 
 <template>
@@ -18,7 +33,7 @@ import { ref } from 'vue'
           <v-btn
             variant="text"
             icon="mdi-chevron-left"
-            @click.stop="rail = !rail"
+            @click.stop="drawer = false"
           ></v-btn>
         </template>
       </v-list-item>

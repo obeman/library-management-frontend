@@ -38,7 +38,19 @@
       <!-- Member List -->
       <v-col cols="12" md="6">
         <v-card>
-          <v-card-title>Members List</v-card-title>
+          <v-card-title>
+            Members List
+            <v-spacer></v-spacer>
+            <v-text-field
+              v-model="search"
+              append-icon="mdi-magnify"
+              label="Search by Name"
+              single-line
+              hide-details
+              class="mr-4"
+              style="max-width: 300px"
+            ></v-text-field>
+          </v-card-title>
           <v-card-text>
             <v-table>
               <thead>
@@ -50,7 +62,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="member in members" :key="member.id">
+                <tr v-for="member in filteredMembers" :key="member.id">
                   <td>{{ member.name }}</td>
                   <td>{{ member.email }}</td>
                   <td>{{ member.phone }}</td>
@@ -113,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 
 const members = ref([])
@@ -129,6 +141,7 @@ const editingMember = ref({
   email: '',
   phone: ''
 })
+const search = ref('')
 
 const API_URL = '/api/members'
 
@@ -181,6 +194,13 @@ const deleteMember = async (id) => {
     }
   }
 }
+
+const filteredMembers = computed(() => {
+  if (!search.value) return members.value;
+  return members.value.filter(member =>
+    member.name && member.name.toLowerCase().includes(search.value.toLowerCase())
+  );
+});
 
 onMounted(() => {
   fetchMembers()
